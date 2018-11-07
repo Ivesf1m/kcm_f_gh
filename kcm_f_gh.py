@@ -10,6 +10,7 @@ def l2_distance(xi, xj):
 
 
 def calculate_initial_variance(data_set):
+    # estimando a variancia inicial a partir dos quantis do data set
     number_rows = data_set.shape[0]
     distances = numpy.zeros((number_rows, number_rows))
     for i in range(0, number_rows):
@@ -23,6 +24,7 @@ def calculate_initial_variance(data_set):
 
 
 def gaussian_kernel(xl, xk, hyper_parameters):
+    # essa funcao representa a equacao 9 do artigo
     acc = 0.0
     for j in range(len(hyper_parameters)):
         acc += hyper_parameters[j] * ((xl.iloc[0, j] - xk.iloc[0, j]) ** 2)
@@ -35,6 +37,7 @@ def calculate_prototype_distance(xk, prototype, hyper_parameters):
 
 
 def calculate_distances(data_set, num_clusters, clusters, cluster_sizes, distance_matrix, hyper_parameters):
+    # essa funcao representa a equacao 21 do artigo
     print('calculating distances')
     number_rows = data_set.shape[0]
 
@@ -47,7 +50,7 @@ def calculate_distances(data_set, num_clusters, clusters, cluster_sizes, distanc
                 si = clusters[i][s]
                 xs = data_set[si:si+1]
                 intra_cluster_distances[i] += gaussian_kernel(xr, xs, hyper_parameters)
-            intra_cluster_distances[i] /= cluster_sizes[i] ** 2
+        intra_cluster_distances[i] /= cluster_sizes[i] ** 2
 
     for i in range(0, number_rows):
         xi = data_set[i:i+1]
@@ -62,6 +65,8 @@ def calculate_distances(data_set, num_clusters, clusters, cluster_sizes, distanc
 
 
 def assign_initial_clusters(data_set, prototypes, num_clusters, hyper_parameters):
+    # Primeira atribuicao de clusters, utilizando a estimativa inicial de hiper
+    # parametros. Os clusters estao vazios aqui.
     number_rows = data_set.shape[0]
     clusters = []
     cluster_sizes = numpy.full(num_clusters, 0)
@@ -86,13 +91,14 @@ def assign_initial_clusters(data_set, prototypes, num_clusters, hyper_parameters
 
 
 def update_hyper_parameters(data_set, clusters, num_clusters, cluster_sizes, hyper_parameters, gamma):
+    # essa funcao representa a equacao 24 do artigo (com a errata)
     print('updating hyperparameters')
     intra_cluster = numpy.full(num_clusters, 0.0)
     number_variables = data_set.shape[1]
     exponent = 1.0 / number_variables
     prod = gamma ** exponent
 
-    # numerator
+    # numerador
     for h in range(0, number_variables):
         for i in range(0, num_clusters):
             for r in range(0, cluster_sizes[i]):
@@ -107,7 +113,7 @@ def update_hyper_parameters(data_set, clusters, num_clusters, cluster_sizes, hyp
             intra_cluster[i] /= cluster_sizes[i]
     prod *= numpy.prod(intra_cluster) ** exponent
 
-    # denominator
+    # denominador
     csum = numpy.zeros(number_variables)
     for j in range(0, number_variables):
         for i in range(0, num_clusters):
@@ -125,22 +131,63 @@ def update_hyper_parameters(data_set, clusters, num_clusters, cluster_sizes, hyp
         hyper_parameters[i] = prod / csum[i]
 
 
-
-def update_clusters(data_set, prototypes, clusters, num_clusters, cluster_sizes, hyper_parameters, gamma):
+def update_clusters(data_set, clusters, num_clusters, cluster_sizes, hyper_parameters, gamma):
     number_rows = data_set.shape[0]
-    distance_matrix = numpy.zeros((num_clusters, number_rows))
-    calculate_distances(data_set, num_clusters, clusters, cluster_sizes, distance_matrix, hyper_parameters)
-    print(hyper_parameters)
-    update_hyper_parameters(data_set, clusters, num_clusters, cluster_sizes, hyper_parameters, gamma)
+    print(cluster_sizes)
     print(hyper_parameters)
 
+    test = True
 
-def kcm_f_gh(data_set, num_clusters):
+    while test:
+        # agora que os temos os clusters iniciais, podemos calcular novas distancias
+        distance_matrix = numpy.zeros((num_clusters, number_rows))
+        calculate_distances(data_set, num_clusters, clusters, cluster_sizes, distance_matrix, hyper_parameters)
+
+        # estimando os novos hiper-parametros
+        update_hyper_parameters(data_set, clusters, num_clusters, cluster_sizes, hyper_parameters, gamma)
+        print('updated hyper parameters')
+        print(hyper_parameters)
+
+        # etapa de alocacao
+        test = False
+        to_remove = [[] for i in range(0, num_clusters)]
+        to_add = [[] for i in range(0, num_clusters)]
+        for i in range(0, num_clusters):
+            for j in range(0, cluster_sizes[i]):
+                xj = clusters[i][j]
+                xj_distances = distance_matrix[:, xj]
+                ci = numpy.argmin(xj_distances)
+                if ci != i:
+                    to_remove[i].append(xj)
+                    to_add[ci].append(xj)
+                    test = True
+
+        print(to_remove)
+        print(to_add)
+
+        for i in range(0, num_clusters):
+            for x in to_remove[i]:
+                clusters[i].remove(x)
+                cluster_sizes[i] -= 1
+
+            for x in to_add[i]:
+                clusters[i].append(x)
+                cluster_sizes[i] += 1
+
+        print('new cluster sizes')
+        print(cluster_sizes)
+
+
+def train_kcm_f_gh(data_set, num_clusters):
     # initialization step
     inv_variance = 1.0 / calculate_initial_variance(data_set)
     prototypes = data_set.sample(n=num_clusters)
     hyper_parameters = numpy.full(data_set.shape[1], inv_variance)
     gamma = inv_variance ** num_clusters
     clusters, cluster_sizes = assign_initial_clusters(data_set, prototypes, num_clusters, hyper_parameters)
-    update_clusters(data_set, prototypes, clusters, num_clusters, cluster_sizes, hyper_parameters, gamma)
+    update_clusters(data_set, clusters, num_clusters, cluster_sizes, hyper_parameters, gamma)
+    print('clusters')
+    print(clusters)
+    print('hyper parameters')
+    print(hyper_parameters)
 
