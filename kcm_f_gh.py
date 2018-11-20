@@ -176,18 +176,20 @@ def update_clusters(data_set, clusters, num_clusters, cluster_sizes, hyper_param
 
         print('new cluster sizes')
         print(cluster_sizes)
+    return clusters, hyper_parameters
 
 
-def train_kcm_f_gh(data_set, num_clusters):
+def kcm_f_gh(data_set, num_clusters):
     # initialization step
     inv_variance = 1.0 / calculate_initial_variance(data_set)
     prototypes = data_set.sample(n=num_clusters)
     hyper_parameters = numpy.full(data_set.shape[1], inv_variance)
     gamma = inv_variance ** num_clusters
     clusters, cluster_sizes = assign_initial_clusters(data_set, prototypes, num_clusters, hyper_parameters)
-    update_clusters(data_set, clusters, num_clusters, cluster_sizes, hyper_parameters, gamma)
+    clusters, hyper_parameters = update_clusters(data_set, clusters, num_clusters, cluster_sizes, hyper_parameters, gamma)
     print('clusters')
     print(clusters)
     print('hyper parameters')
     print(hyper_parameters)
+    return clusters, hyper_parameters
 
