@@ -37,8 +37,8 @@ def mle(data_set, classes, training_examples):
     return class_count, class_mean, class_variance
 
 
-def prior_probability(num_variables, xk, mean, inv_cov_matrix):
-    prob = (2 * pi) ** (-num_variables / 2)
+def cond_probability(num_variables, xk, mean, inv_cov_matrix):
+    prob = (2.0 * pi) ** (-num_variables / 2.0)
     det = numpy.linalg.det(inv_cov_matrix)
     prob *= det ** 0.5
     diff = numpy.matrix(xk - mean)
@@ -50,7 +50,7 @@ def bayes_probability(num_variables, xk, class_probs, means, inv_cov_matrices):
     num_classes = len(class_probs)
     priors = numpy.zeros(num_classes)
     for i in range(0, num_classes):
-        priors[i] = prior_probability(num_variables, xk, means[i], inv_cov_matrices[i])
+        priors[i] = cond_probability(num_variables, xk, means[i], inv_cov_matrices[i])
     evidence = numpy.sum(numpy.multiply(priors, class_probs))
     probs = [priors[i] * class_probs[i] / evidence for i in range(0, num_classes)]
     return probs

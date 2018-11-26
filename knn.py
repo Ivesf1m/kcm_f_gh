@@ -16,8 +16,10 @@ def knn(training_set, train_fold, classes, xk, k):
     distances = sorted(distances.items(), key=lambda x: x[1])
 
     class_counts = {}
+    # class_probs = {}
     for c in classes:
         class_counts[c] = 0.0
+        # class_probs[c] = 0.0
 
     count = 0
     for t in distances:
@@ -26,9 +28,12 @@ def knn(training_set, train_fold, classes, xk, k):
             class_counts[i] += 1.0 / 1e-5
         else:
             class_counts[i] += 1.0 / sqrt(t[1])
+        # class_probs[i] += 1.0
         count += 1
         if count == k:
             break
+
+    # V = 0.143 #usando V como constante para o calculo da probabilidade
 
     # print(class_counts)
     return max(class_counts, key=lambda key: class_counts[key])

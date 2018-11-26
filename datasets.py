@@ -1,5 +1,7 @@
 import numpy
 from pandas import read_csv
+from scipy import mean
+from scipy.stats import sem
 
 
 def read_set(filename):
@@ -19,3 +21,13 @@ def get_labels(data_set):
     for r in iterator:
         labels.append(r[0])
     return labels
+
+
+def normalize_data_set(data_set):
+    for column in data_set.columns:
+        #data_set[column] = ((data_set[column] - mean(data_set[column])) /
+        #                    sem(data_set[column]))
+        data_set[column] = ((data_set[column] - numpy.min(data_set[column])) /
+                            (numpy.max(data_set[column]) -
+                             numpy.min(data_set[column])))
+    return data_set
