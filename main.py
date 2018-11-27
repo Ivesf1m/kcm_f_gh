@@ -4,21 +4,31 @@ from knn import knn, validate_k
 from bayesian_classifier import train_bayesian_classifier,\
     test_bayesian_classifier, bayes_probability
 from kcm_f_gh import kcm_f_gh
+from math import sqrt
 from scipy import mean
-from scipy.stats import sem, t, friedmanchisquare
+from scipy.stats import sem, norm, t, friedmanchisquare
 from scikit_posthocs import posthoc_nemenyi_friedman
 from sklearn.metrics.cluster import adjusted_rand_score
 from sklearn.model_selection import StratifiedKFold
 
 
-def confidence_interval(data, size=30):
+def mean_confidence_interval(data, size=30):
     confidence = 0.95  # nivel de confianca
-    n = 30
     m = mean(data)
     std_err = sem(data)
-    error = std_err * t.ppf((1 + confidence) / 2, n - 1)
+    error = std_err * t.ppf((1 + confidence) / 2, size - 1)
     inferior = m - error
     superior = m + error
+    print('taxa de acerto media: ', m)
+    print('[', inferior, ', ', superior, ']')
+
+def proportion_confidence_interval(data, size=30):
+    confidence = 0.95
+    p = mean(data)
+    std_err = sqrt(p * (1.0 - p) / size)
+    error = std_err * norm.ppf((1.0 + confidence) / 2.0)
+    inferior = p - error
+    superior = p + error
     print('taxa de acerto media: ', m)
     print('[', inferior, ', ', superior, ']')
 
@@ -62,7 +72,8 @@ def bayesian_classifier(data_set, classes, labels):
         mean_rate /= 10 # numero de folds
         rates[i] = mean_rate
 
-    confidence_interval(rates)
+    mean_confidence_interval(rates)
+    proportion_confidence_interval(rates)
     return rates
 
 
@@ -84,7 +95,8 @@ def test_knn(data_set, classes, labels, k):
         mean_rate /= 10 # numero de folds
         rates[i] = mean_rate
 
-    confidence_interval(rates)
+    mean_confidence_interval(rates)
+    proportion_confidence_interval(rates)
     return rates
 
 def max_rule(data_set, view1, view2, classes, labels, ks):
