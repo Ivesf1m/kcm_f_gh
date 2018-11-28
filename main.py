@@ -1,6 +1,6 @@
 import numpy
 import datasets
-from knn import knn, validate_k
+import knn
 from bayesian_classifier import train_bayesian_classifier,\
     test_bayesian_classifier, bayes_probability
 from kcm_f_gh import kcm_f_gh
@@ -22,6 +22,7 @@ def mean_confidence_interval(data, size=30):
     print('taxa de acerto media: ', m)
     print('[', inferior, ', ', superior, ']')
 
+
 def proportion_confidence_interval(data, size=30):
     confidence = 0.95
     p = mean(data)
@@ -29,7 +30,7 @@ def proportion_confidence_interval(data, size=30):
     error = std_err * norm.ppf((1.0 + confidence) / 2.0)
     inferior = p - error
     superior = p + error
-    print('taxa de acerto media: ', m)
+    print('taxa de acerto media: ', p)
     print('[', inferior, ', ', superior, ']')
 
 
@@ -79,6 +80,7 @@ def bayesian_classifier(data_set, classes, labels):
 
 def test_knn(data_set, classes, labels, k):
     rates = numpy.zeros(30)
+    distance_matrix = knn.calculate_distance_matrix(data_set)
     for i in range(0, 30):
         kf = StratifiedKFold(n_splits=10, shuffle=True)
         folds = kf.split(data_set, labels)
@@ -87,7 +89,8 @@ def test_knn(data_set, classes, labels, k):
             rate = 0.0
             for x in test:
                 xk = data_set.iloc[x]
-                predicted_class = knn(data_set, train, classes, xk, k)
+                predicted_class, class_probs = \
+                    knn.knn(data_set, distance_matrix, train, classes, x, k)
                 if xk.name == predicted_class:
                     rate += 1.0
             rate /= len(test)
@@ -99,6 +102,7 @@ def test_knn(data_set, classes, labels, k):
     proportion_confidence_interval(rates)
     return rates
 
+
 def max_rule(data_set, view1, view2, classes, labels, ks):
     L = 3
     num_classes = len(classes)
@@ -106,6 +110,9 @@ def max_rule(data_set, view1, view2, classes, labels, ks):
     num_variables2 = view1.shape[1]
     num_variables3 = view2.shape[1]
     rates = numpy.zeros(30)
+    distance_matrix1 = knn.calculate_distance_matrix(data_set)
+    distance_matrix2 = knn.calculate_distance_matrix(view1)
+    distance_matrix3 = knn.calculate_distance_matrix(view2)
 
     for i in range(0, 30):
         kf = StratifiedKFold(n_splits=10, shuffle=True)
@@ -137,10 +144,18 @@ def max_rule(data_set, view1, view2, classes, labels, ks):
                 probs3 = bayes_probability(num_variables3, x3, class_probs3,
                                            means3, inv_cov_matrices3)
 
+                pred_class1, knn_probs_1 = knn(data_set, distance_matrix1,
+                                               train, classes, x, ks[0])
+                pred_class2, knn_probs_2 = knn(view1, distance_matrix2, train,
+                                               classes, x, ks[1])
+                pred_class3, knn_probs_3 = knn(data_set, distance_matrix3,
+                                               train, classes, x, ks[2])
+
                 class_votes = numpy.zeros(num_classes)
                 for j in range(0, num_classes):
                     class_votes[j] = (1 - L) * class_probs1[j] + L * max(
-                        probs1[j], probs2[j], probs3[j])
+                        probs1[j], probs2[j], probs3[j], knn_probs_1[j],
+                        knn_probs_2[j], knn_probs_3[j])
                 predicted_class = numpy.argmax(class_votes)
                 if predicted_class == x1.name:
                     rate += 1.0
@@ -149,8 +164,10 @@ def max_rule(data_set, view1, view2, classes, labels, ks):
         mean_rate /= 10 # numero de folds
         rates[i] = mean_rate
 
-    confidence_interval(rates)
+    mean_confidence_interval(rates)
+    proportion_confidence_interval(rates)
     return rates
+
 
 def compare_classifiers(data_set, view1, view2, classes, labels, ks):
 
@@ -184,7 +201,7 @@ def compare_classifiers(data_set, view1, view2, classes, labels, ks):
 
 
 data_set_classes = ['BRICKFACE', 'SKY', 'FOLIAGE', 'CEMENT', 'WINDOW', 'PATH', 'GRASS']
-training_set = datasets.read_set('segmentation_mod.data')
+training_set = datasets.read_set('segmentation.test')
 training_set = datasets.normalize_data_set(training_set)
 training_shape_view, training_rgb_view = datasets.split_views(training_set)
 data_set_labels = datasets.get_labels(training_set)
@@ -198,9 +215,15 @@ training_shape_view = training_shape_view.drop(columns=['REGION-PIXEL-COUNT',
                                                         'SHORT-LINE-DENSITY-5',
                                                         'SHORT-LINE-DENSITY-2'])
 
-test_kcm_f_gh(training_rgb_view, data_set_classes, data_set_labels)
+# melhores ks obtidos para o conjunto de treinamento e a vies
+# isto foi obtido por validacao cruzada (validate_k do arquivo knn.py)
+training_set_k = 15
+shape_view_k = 19
+rgb_view_k = 15
+ks = [training_set_k, shape_view_k, rgb_view_k]
+# test_kcm_f_gh(training_rgb_view, data_set_classes, data_set_labels)
 # bayesian_classifier(training_set, data_set_classes, data_set_labels)
 # test_knn(training_set, data_set_classes, data_set_labels, 3)
 
-# best_k = validate_k(training_set, classes, labels)
-# print(best_k)
+best_k = knn.validate_k(training_set, data_set_classes, data_set_labels)
+print(best_k)

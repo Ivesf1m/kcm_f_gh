@@ -159,8 +159,9 @@ def update_clusters(data_set, clusters, num_clusters, cluster_sizes, hyper_param
     print(hyper_parameters)
 
     test = True
+    num_iterations = 0
 
-    while test:
+    while test and num_iterations < 25:
         # agora que temos os clusters iniciais, podemos calcular novas distancias
         distance_matrix = numpy.zeros((num_clusters, number_rows))
         calculate_distances(data_set, num_clusters, clusters, cluster_sizes,
@@ -169,7 +170,6 @@ def update_clusters(data_set, clusters, num_clusters, cluster_sizes, hyper_param
         # estimando os novos hiper-parametros
         update_hyper_parameters(data_set, clusters, num_clusters,
                                 cluster_sizes, hyper_parameters, gamma)
-        print('updated hyper parameters')
         print(hyper_parameters)
 
         # etapa de alocacao
