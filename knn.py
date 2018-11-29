@@ -57,27 +57,22 @@ def validate_k(training_set, classes, labels):
     fold_count = 0
     distance_matrix = calculate_distance_matrix(training_set)
     print('matriz de distancias calculada')
+    number_rows = training_set.shape[0]
 
     rates = []
     for k in ks:
-        mean_rate = 0.0
-        print('k = ', k)
         kf = StratifiedKFold(n_splits=10, shuffle=True)
         folds = kf.split(training_set, labels)
+        error_rate = 0.0
         for train, test in folds:
-            print('fold ', fold_count)
-            fold_count += 1
-            error_rate = 0.0
             for i in test:
                 xi = training_set.iloc[i]
                 predicted_class, class_probs = \
                     knn(training_set, distance_matrix, train, classes, i, k)
                 if predicted_class != xi.name:
                     error_rate += 1.0
-            error_rate /= len(test)
-            mean_rate += error_rate
-        mean_rate /= 10 # numero de folds
-        rates.append(mean_rate)
+        error_rate /= number_rows
+        rates.append(error_rate)
     print(rates)
     m_index = numpy.argmin(rates)
     return 2 * (m_index + 1) + 1

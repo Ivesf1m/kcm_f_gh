@@ -83,4 +83,4 @@ def test_bayesian_classifier(data_set, classes, test_examples, class_probs, mean
         # print(xk_probs)
         new_class = numpy.argmax(xk_probs)
         confusion_matrix[real_class, new_class] += 1
-    return numpy.sum(numpy.diag(confusion_matrix)) / len(test_examples)
+    return numpy.sum(numpy.diag(confusion_matrix))
