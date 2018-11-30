@@ -23,6 +23,24 @@ def get_labels(data_set):
     return labels
 
 
+def describe_data_set(data_set):
+    shape = data_set.shape
+    print('Number of rows: ', shape[0])
+    print('Number of variables: ', shape[1])
+
+    print('Colunas: ')
+    for c in data_set.columns:
+        print(c)
+
+    print('Media de cada coluna: ')
+    for c in data_set.columns:
+        print(mean(data_set[c]))
+
+    print('Desvio padrao de cada coluna:')
+    for c in data_set.columns:
+        print(sem(data_set[c]))
+
+
 def normalize_data_set(data_set):
     for column in data_set.columns:
         #data_set[column] = ((data_set[column] - mean(data_set[column])) /

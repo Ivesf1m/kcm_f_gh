@@ -9,7 +9,6 @@ def knn(training_set, distance_matrix, train_fold, classes, xk_index, k):
 
     distances = distance_matrix[xk_index, :]
     min_indices = numpy.argpartition(distances, k)
-    min_indices = numpy.delete(min_indices, 0) # o proprio xk
     min_indices = min_indices[:k]
 
     class_counts = {}
@@ -20,13 +19,15 @@ def knn(training_set, distance_matrix, train_fold, classes, xk_index, k):
 
     count = 0
     for t in min_indices:
+        if t == xk_index:
+            continue
         i = training_set.index[t]
         if distance_matrix[xk_index][t] == 0.0:
             class_counts[i] += 1.0 / 1e-5
         else:
             class_counts[i] += 1.0 / distance_matrix[xk_index][t]
         class_probs[i] += 1.0
-        count += 1
+        count += 1.0
         if count == k:
             break
 

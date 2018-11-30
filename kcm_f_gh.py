@@ -171,7 +171,7 @@ def update_clusters(data_set, clusters, num_clusters, cluster_sizes, dists, hype
     test = True
     num_iterations = 0
 
-    while test and num_iterations < 10:
+    while test and num_iterations < 15:
         # agora que temos os clusters iniciais, podemos calcular novas distancias
         distance_matrix = numpy.zeros((num_clusters, number_rows))
         calculate_distances(data_set, num_clusters, clusters, cluster_sizes, dists,
