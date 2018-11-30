@@ -1,13 +1,14 @@
 import numpy
 import datasets
 import knn
+import pandas
 from bayesian_classifier import train_bayesian_classifier,\
     test_bayesian_classifier, bayes_probability
 from kcm_f_gh import kcm_f_gh, calculate_distance_matrix
 from math import sqrt
 from scipy import mean
 from scipy.stats import sem, norm, t, friedmanchisquare
-from scikit_posthocs import posthoc_nemenyi_friedman
+from scikit_posthocs import posthoc_nemenyi
 from sklearn.metrics.cluster import adjusted_rand_score
 from sklearn.model_selection import StratifiedKFold
 
@@ -200,19 +201,29 @@ def compare_classifiers(data_set, view1, view2, classes, labels, ks):
     max_rule_rates = max_rule(data_set, view1, view2, dists, classes, labels, ks)
 
     print('teste de friedman')
-    rate_matrix = numpy.array([mean(bayesian_rates_data_set), mean(bayesian_rates_view1), mean(bayesian_rates_view2)],
-                              [mean(knn_rates_data_set), mean(knn_rates_view1), mean(knn_rates_view2)],
-                              [mean(max_rule_rates), mean(max_rule_rates), mean(max_rule_rates)])
-    statistic, pvalue = friedmanchisquare(rate_matrix)
+    rate_matrix = pandas.DataFrame({"bayes1": bayesian_rates_data_set,
+                                    "bayes2": bayesian_rates_view1,
+                                    "bayes3": bayesian_rates_view2,
+                                    "knn1": knn_rates_data_set,
+                                    "knn2": knn_rates_view1,
+                                    "knn3": knn_rates_view2,
+                                    "combined": max_rule_rates})
+
+    statistic, pvalue = friedmanchisquare(rate_matrix["bayes1"], rate_matrix["bayes2"],
+                                          rate_matrix["bayes3"], rate_matrix["knn1"],
+                                          rate_matrix["knn2"], rate_matrix["knn3"],
+                                          rate_matrix["combined"])
     print('friedman statistic: ', statistic)
     print('pvalue: ', pvalue)
 
     if pvalue < 0.05:
         # rejeitando a hipotese de que nao existe diferenca entre
         # os classificadores
-        nemenyi_results = posthoc_nemenyi_friedman(rate_matrix)
+        rate_matrix = rate_matrix.melt(var_name='groups', value_name='values')
+        nemenyi_results = posthoc_nemenyi(rate_matrix, val_col='values', group_col='groups')
         print('teste de nemenyi')
-        print(nemenyi_results)
+        for i in range(0, nemenyi_results.shape[0]):
+            print(nemenyi_results.iloc[i])
 
 
 data_set_classes = ['BRICKFACE', 'SKY', 'FOLIAGE', 'CEMENT', 'WINDOW', 'PATH', 'GRASS']
